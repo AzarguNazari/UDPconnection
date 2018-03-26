@@ -22,7 +22,6 @@ public class clientUDP {
     public void send(ArrayList<String> file) throws IOException {
         for (String s : file) {
             byte[] line = s.getBytes();
-            System.out.println(s);
             DatagramPacket packet = new DatagramPacket(line, line.length, address, 9000);
             socket.send(packet);
         }
