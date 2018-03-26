@@ -5,56 +5,55 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ServerUDP extends Thread {
+public class EchoServer extends Thread {
 
-    private DatagramSocket socket;
-    private byte[] buf = new byte[256];
+    private final DatagramSocket socket;
+    private boolean running;
+    private final byte[] buf = new byte[256];
 
-    public ServerUDP(int port) throws IOException {
-        socket = new DatagramSocket(port);
-        socket.setSoTimeout(5000);
+    public EchoServer() throws SocketException {
+        socket = new DatagramSocket(4445);
     }
 
     @Override
     public void run() {
-        PrintWriter fileOutput = null;
+        running = true;
         try {
-            fileOutput = new PrintWriter(new File("server.txt"));
-        } catch (FileNotFoundException ex) {
+            
+            PrintWriter output = new PrintWriter(new File("server.txt"));
+            while (running) {
+
+                Arrays.fill(buf, (byte) 0);
+                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                socket.receive(packet);
+                String recieved = new String(packet.getData(), "UTF-8").trim();
+                
+                if (recieved.equals("end")) {
+                    output.close();
+                    output = new PrintWriter(new File(getRandomName()));
+                    System.out.println("----------------- File Ended--------------------------");
+                }
+                else{
+                    output.println(recieved);
+                }
+
+            }
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
-        
-        DatagramPacket packet;
-        while (true) {
-            try{
-                packet = new DatagramPacket(buf, buf.length);
-                socket.receive(packet);
-                
-                String message = new String(buf, "UTF-8");
-                if(message.equalsIgnoreCase("end")){
-                    break;
-                }
-                System.out.println(message);
-                fileOutput.println(message);
-            }
-            catch(Exception ex){
-                ex.printStackTrace();
-            }
-        }
-        fileOutput.close();
         socket.close();
     }
+    
+    public String getRandomName(){
+        return "sever" + (int)(Math.random() * 10000);
+    }
 
-    public static void main(String[] args) {
-        int port = 9000;
-        try {
-            Thread t = new ServerUDP(port);
-            t.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static void main(String[] args) throws SocketException {
+        new EchoServer().start();
     }
 }
