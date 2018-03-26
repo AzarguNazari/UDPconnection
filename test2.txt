@@ -1,0 +1,54 @@
+2.2. The Inversion of Control (IoC) container
+One of the areas that contains a considerable number of 2.0 and 2.5 improvements is Spring's IoC container.
+
+2.2.1. New bean scopes
+Previous versions of Spring had IoC container level support for exactly two distinct bean scopes (singleton and prototype). Spring 2.0 improves on this by not only providing a number of additional scopes depending on the environment in which Spring is being deployed (for example, request and session scoped beans in a web environment), but also by providing integration points so that Spring users can create their own scopes.
+
+It should be noted that although the underlying (and internal) implementation for singleton- and prototype-scoped beans has been changed, this change is totally transparent to the end user... no existing configuration needs to change, and no existing configuration will break.
+
+Both the new and the original scopes are detailed in the section entitled Section 3.4, “Bean scopes”.
+
+2.2.2. Easier XML configuration
+Spring XML configuration is now even easier, thanks to the advent of the new XML configuration syntax based on XML Schema. If you want to take advantage of the new tags that Spring provides (and the Spring team certainly suggest that you do because they make configuration less verbose and easier to read), then do read the section entitled Appendix A, XML Schema-based configuration.
+
+On a related note, there is a new, updated DTD for Spring 2.0 that you may wish to reference if you cannot take advantage of the XML Schema-based configuration. The DOCTYPE declaration is included below for your convenience, but the interested reader should definitely read the 'spring-beans-2.0.dtd' DTD included in the 'dist/resources' directory of the Spring 2.5 distribution.
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN"
+		  "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+2.2.3. Extensible XML authoring
+Not only is XML configuration easier to write, it is now also extensible.
+
+What 'extensible' means in this context is that you, as an application developer, or (more likely) as a third party framework or product vendor, can write custom tags that other developers can then plug into their own Spring configuration files. This allows you to have your own domain specific language (the term is used loosely here) of sorts be reflected in the specific configuration of your own components.
+
+Implementing custom Spring tags may not be of interest to every single application developer or enterprise architect using Spring in their own projects. We expect third-party vendors to be highly interested in developing custom configuration tags for use in Spring configuration files.
+
+The extensible configuration mechanism is documented in Appendix B, Extensible XML authoring.
+
+2.2.4. Annotation-driven configuration
+Spring 2.0 introduced support for various annotations for configuration purposes, such as @Transactional, @Required and @PersistenceContext /@PersistenceUnit.
+
+Spring 2.5 introduces support for a complete set of configuration annotations: @Autowired in combination with support for the JSR-250 annotations @Resource, @PostConstruct and @PreDestroy .
+
+Annotation-driven bean configuration is discussed in Section 3.11, “Annotation-based configuration”. Check out annotation support for Spring MVC as well: Section 2.5.3, “Annotation-based controllers”
+
+2.2.5. Autodetecting components in the classpath
+Spring 2.5 introduces support component scanning: autodetecting annotated components in the classpath. Typically, such component classes will be annotated with stereotypes such as @Component, @Repository, @Service, @Controller. Depending on the application context configuration, such component classes will be autodetected and turned into Spring bean definitions, not requiring explicit configuration for each such bean.
+
+Annotation-driven bean configuration is discussed in Section 3.12.1, “@Component and further stereotype annotations”.
+
+2.3. Aspect Oriented Programming (AOP)
+Spring 2.0 has a much improved AOP offering. The Spring AOP framework itself is markedly easier to configure in XML, and significantly less verbose as a result; and Spring 2.0 integrates with the AspectJ pointcut language and @AspectJ aspect declaration style. The chapter entitled Chapter 6, Aspect Oriented Programming with Spring is dedicated to describing this new support.
+
+2.3.1. Easier AOP XML configuration
+Spring 2.0 introduces new schema support for defining aspects backed by regular Java objects. This support takes advantage of the AspectJ pointcut language and offers fully typed advice (i.e. no more casting and Object[] argument manipulation). Details of this support can be found in the section entitled Section 6.3, “Schema-based AOP support”.
+
+2.3.2. Support for @AspectJ aspects
+Spring 2.0 also supports aspects defined using the @AspectJ annotations. These aspects can be shared between AspectJ and Spring AOP, and require (honestly!) only some simple configuration. Said support for @AspectJ aspects is discussed in Section 6.2, “@AspectJ support”.
+
+2.3.3. Support for bean name pointcut element
+Spring 2.5 introduces support for the bean(...) pointcut element, matching specific named beans according to Spring-defined bean names. See Section 6.2.3.1, “Supported Pointcut Designators” for details.
+
+2.3.4. Support for AspectJ load-time weaving
+Spring 2.5 introduces explicit support AspectJ load-time weaving, as alternative to the proxy-based AOP framework. The new context:load-time-weaver configuration element automatically activates AspectJ aspects as defined in AspectJ's META-INF/aop.xml descriptor, applying them to the current application context through registering a transformer with the underlying ClassLoader. Note that this only works in environments with class transformation support. Check out Section 6.8.4, “Load-time weaving with AspectJ in the Spring Framework” for the capabilities and limitations.
+
+2.4. The Middle Tier
