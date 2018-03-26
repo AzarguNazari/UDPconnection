@@ -1,5 +1,4 @@
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -9,35 +8,39 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class clientUDP {
-
-    private DatagramSocket socket;
-    private InetAddress address;
-
-    public clientUDP() throws SocketException, UnknownHostException {
+public class EchoClient {
+    
+    private final DatagramSocket socket;
+    private final InetAddress address;
+    private byte[] buf;
+ 
+    public EchoClient() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
         address = InetAddress.getByName("localhost");
     }
-
-    public void send(ArrayList<String> file) throws IOException {
-        for (String s : file) {
-            byte[] line = s.getBytes();
-            DatagramPacket packet = new DatagramPacket(line, line.length, address, 9000);
+ 
+    public void sendEcho(String msg) {
+        
+        buf = msg.getBytes();
+        try{
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
             socket.send(packet);
         }
+        catch(IOException ex){
+            ex.printStackTrace();
+        }
     }
-
-    public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
-
-        /*------------------- File choosing -------------- */
-        Scanner input = new Scanner(System.in);
-        System.out.print("Type the name of file example(test1, test2): ");
-        String fileName = input.next();
-
-        FileScanner scan = new FileScanner(fileName);
-
-        scan.getLines().add("end");
-        new clientUDP().send(scan.getLines());
-
+ 
+    public void close() {
+        socket.close();
+    }
+    
+    public static void main(String[] args) throws SocketException, UnknownHostException, Exception {
+        EchoClient client = new EchoClient();
+        FileScanner scan = new FileScanner("test");
+        ArrayList<String> lines = scan.getLines();
+        for(String l : lines){
+            client.sendEcho(l);
+        }
     }
 }
