@@ -43,7 +43,6 @@ import java.util.Scanner;
 
 
 
-
 public class Server extends Thread {
 
     
@@ -71,7 +70,9 @@ public class Server extends Thread {
 
                 Arrays.fill(buf, (byte) 0);
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                
                 socket.receive(packet);
+                
                 String recieved = new String(packet.getData(), "UTF-8").trim();
                 
                 if (recieved.equals("end")) {
