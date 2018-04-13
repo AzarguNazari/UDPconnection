@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -7,6 +8,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
+
 
 /**
  * 
@@ -41,60 +43,160 @@ import java.util.Scanner;
 
 
 
+
+
 public class Client {
     
-    //------------------------ properties --------
-    private DatagramSocket socket;
-    private InetAddress address;
-    private byte[] buf;
-    private static byte counter;
-    //---------------------------------------------
+    //------------------ Properties --------------------
+    private final DatagramSocket socket;
+    private final InetAddress address;
+    private static byte seqNum;
+    private byte[] packet;
+    //-------------------------------------------------
  
     
-    
-    
+    //-------------- Constructor --------------------------
     public Client() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
         address = InetAddress.getByName("localhost");
-        counter = 0;
+        seqNum = 0;
     }
  
-    
-    
-    
-    public void sendEcho(String msg) {
-        buf = new byte[msg.length() + 4];
-        buf[0] = counter;
+    /**
+     * This method is to send the UDP to the server
+     * @param msg The line of file to be sent
+     * @param sequenceNumber The sequence number to be sent to the server
+     */
+    //------------- Sending data to the server
+    public void sendEcho(String msg, int sequenceNumber) {
         
-        buf = msg.getBytes();
+        // convert the message to bytes
+        byte[] buf = msg.getBytes();
+        
+        // intializing the size of packet
+        packet = new byte[msg.length() + 4];
+        
+        // the first byte is reserved to the 
+        packet[0] = (byte) sequenceNumber;
+        
+        // the second byte is reseved to the message length
+        packet[1] = (byte) buf.length;
+        
+        // the 3th and 4th bytes are reserved to the checksum value
+        byte[] checksum = checkSumCalculation(msg);
+        packet[2] = checksum[0];
+        packet[3] = checksum[1];
+        
+        // copy the message content into a new array byte
+        System.arraycopy(buf, 0, packet, 4, buf.length);
+        
+        
         try{
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
-            socket.send(packet);
+            
+            // send the packet
+            DatagramPacket UDPpacket = new DatagramPacket(packet, packet.length, address, 4445);
+            socket.send(UDPpacket);
+            
+            // recieve the acknowledgment
+            byte[] acknowledgement = new byte[3];
+            UDPpacket = new DatagramPacket(acknowledgement, acknowledgement.length);
+            socket.receive(UDPpacket);
+            
+            if(acknowledgement[0] == 1){
+                sendEcho(msg, sequenceNumber);
+            }
+            else{
+                System.out.println(("Line " + sequenceNumber) + " is sent successfully");
+            }
         }
         catch(IOException ex){
             ex.printStackTrace();
         }
     }
  
+    /**
+     * This method is to close the socket connection
+     */
     public void close() {
         socket.close();
     }
     
+    
+    
+    
+    /**
+     * This method is to calculate the checksum of a specific line of the file
+     * @param message the line of file to check it's checksum
+     * @return two bytes of checksum
+     */
+    public static byte[] checkSumCalculation(String message){
+       byte[] bytes = new byte[2];
+       short first = (short) message.charAt(0);
+       for(int x = 0; x < message.length(); x++){
+           first = (short) ((first + message.charAt(x)) % 16);
+       }
+       bytes[0] = (byte)(first & 0xff);
+       bytes[1] = (byte)((first >> 8) & 0xff);
+       return bytes;
+    }
+    
+    
     public static void main(String[] args) throws SocketException, UnknownHostException, Exception {
-        Client client = new Client();
-        FileScanner scan = new FileScanner("test");
-        ArrayList<String> lines = scan.getLines();
-        for(String l : lines){
-            client.sendEcho(l);
+        
+        
+        Client client;
+        FileScanner scan;       
+        ArrayList<String> lines;
+        Scanner input = new Scanner(System.in);
+        
+        
+        
+        outerloop:
+        while(true){
+            
+            // This display message for the user
+            System.out.println("------------------------------");
+            System.out.println("1 > For Sending File");
+            System.out.println("2 > For Exit");
+            System.out.println("------------------------------");
+            System.out.print("Please Insert an Option >> ");
+            
+            
+            int option = input.nextInt();
+            
+            // entered options from the user
+            switch(option){
+                
+                /* Sending message option */
+                case 1:
+                    
+                    // Insert the file name without extension
+                    System.out.print("Insert Your File Name, Example (test1, test2): ");
+                    String fileName = input.next();
+                    
+                    // Initializing client object
+                    client = new Client();
+                    
+                    // converting file into array of lines
+                    lines = new FileScanner(fileName).getLines();    
+                    
+                    client.sendEcho(fileName, seqNum++);
+                    for(String line : lines){
+                        client.sendEcho(line, seqNum++);
+                    }
+                    client.close();
+                    break;
+                    
+                case 2:
+                    break outerloop;
+                    
+                default:
+                    System.out.println("Sorry! You have to enter either 1 or 2");
+            }
+            
         }
-    }
-    
-    
-    public static byte[] checksum(byte[] list){
-        return null;
-    }
-    
-    public static int getCounter(){
-    
+        
+        
+       
     }
 }
