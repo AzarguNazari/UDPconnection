@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package javaapplication2;
+
 
 
 import java.io.IOException;
@@ -55,9 +55,9 @@ import java.util.Scanner;
 public class Client {
     
     //------------------ Properties --------------------
-    private final DatagramSocket socket;
-    private final InetAddress address;
-    private static byte seqNum;
+    private final DatagramSocket socket;     // --------> socket for openning communication
+    private final InetAddress address;      // ---------> to get the packet address
+    private static byte seqNum;            //-----------> sequnce number for each packet
     private byte[] packet;
     //-------------------------------------------------
  
@@ -65,8 +65,8 @@ public class Client {
     //-------------- Constructor --------------------------
     public Client() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
-        address = InetAddress.getByName("localhost");
-        seqNum = 0;
+        address = InetAddress.getByName("localhost");   //------> getting localhost's ip address (127.0.0.0)
+        seqNum = 0; 
     }
  
     /**
@@ -77,25 +77,22 @@ public class Client {
     //------------- Sending data to the server
     public void sendEcho(String msg, int sequenceNumber) {
         
-        // convert the message to bytes
-        byte[] buf = msg.getBytes();
-        
         // intializing the size of packet
-        packet = new byte[msg.length() + 4];
+        packet = new byte[msg.getBytes().length + 4];
         
-        // the first byte is reserved to the 
+        // the first byte is reserved to the packet's sequence number
         packet[0] = (byte) sequenceNumber;
         
-        // the second byte is reseved to the message length
-        packet[1] = (byte) buf.length;
+        // the second byte is reseved to the message's length
+        packet[1] = (byte) msg.getBytes().length;
         
         // the 3th and 4th bytes are reserved to the checksum value
-        byte[] checksum = checkSumCalculation(msg);
+        byte[] checksum = checkSumCalculation(msg);   
         packet[2] = checksum[0];
         packet[3] = checksum[1];
         
         // copy the message content into a new array byte
-        System.arraycopy(buf, 0, packet, 4, buf.length);
+        System.arraycopy(msg.getBytes(), 0, packet, 4, msg.getBytes().length);
         
         
         try{
@@ -151,14 +148,12 @@ public class Client {
     public static void main(String[] args) throws SocketException, UnknownHostException, Exception {
         
         
-        Client client;
-        FileScanner scan;       
+        Client client;     
         ArrayList<String> lines;
         Scanner input = new Scanner(System.in);
         
         
-        
-        outerloop:
+        ///----------> loop is because maybe the client wants to send several files
         while(true){
             
             // This display message for the user
@@ -174,28 +169,35 @@ public class Client {
             // entered options from the user
             switch(option){
                 
-                /* Sending message option */
+                /* user wants to send file to the server */
                 case 1:
                     
                     // Insert the file name without extension
                     System.out.print("Insert Your File Name, Example (test1, test2): ");
                     String fileName = input.next();
                     
-                    // Initializing client object
+                    // Initializing a new client object
                     client = new Client();
                     
                     // converting file into array of lines
                     lines = new FileScanner(fileName).getLines();    
                     
+                    // the first request is the file name
                     client.sendEcho(fileName, seqNum++);
+                    
+                    
                     for(String line : lines){
                         client.sendEcho(line, seqNum++);
                     }
+                    
+                    // close the communication
                     client.close();
                     break;
-                    
+                  
+                // ----> the user wants to close the program
                 case 2:
-                    break outerloop;
+                    System.out.println("The problem is closed now");
+                    System.exit(0);
                     
                 default:
                     System.out.println("Sorry! You have to enter either 1 or 2");
