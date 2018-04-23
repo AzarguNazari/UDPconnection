@@ -1,11 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
-
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -15,7 +7,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
-
 
 /**
  * 
@@ -47,165 +38,114 @@ import java.util.Scanner;
  */
 
 
-
-
-
-
-
 public class Client {
     
-    //------------------ Properties --------------------
-    private final DatagramSocket socket;     // --------> socket for openning communication
-    private final InetAddress address;      // ---------> to get the packet address
-    private static byte seqNum;            //-----------> sequnce number for each packet
-    private byte[] packet;
-    //-------------------------------------------------
+    private final DatagramSocket socket;
+    private final InetAddress address;
+    private byte[] buf;
  
     
-    //-------------- Constructor --------------------------
+    
     public Client() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
-        address = InetAddress.getByName("localhost");   //------> getting localhost's ip address (127.0.0.0)
-        seqNum = 0; 
+        address = InetAddress.getByName("localhost");
     }
  
+    
     /**
-     * This method is to send the UDP to the server
-     * @param msg The line of file to be sent
-     * @param sequenceNumber The sequence number to be sent to the server
+     * Description: This method is used for sending the message to the serve
+     * @param msg the message (line) to be sent
+     * @param sequence  the sequence number of the packet
+     * @throws IOException in case if the IO exception occur
+     * @throws InterruptedException  in case if the Interrupt occur during option
      */
-    //------------- Sending data to the server
-    public void sendEcho(String msg, int sequenceNumber) {
+    public void sendPacket(String msg, byte sequence) throws IOException, InterruptedException {
+        // 4 bytes should be added for head purpose
+        buf = new byte[msg.getBytes().length + 4];
         
-        // intializing the size of packet
-        packet = new byte[msg.getBytes().length + 4];
+        // first byte for sequence
+        buf[0] = sequence;
         
-        // the first byte is reserved to the packet's sequence number
-        packet[0] = (byte) sequenceNumber;
+        // second byte for length
+        buf[1] = (byte) msg.length();
         
-        // the second byte is reseved to the message's length
-        packet[1] = (byte) msg.getBytes().length;
+        // 3th and 4th bytes for checksum purpose
+        byte[] checksum = checkSumCalculation(msg);
+        buf[2] = checksum[0];
+        buf[3] = checksum[1];
         
-        // the 3th and 4th bytes are reserved to the checksum value
-        byte[] checksum = checkSumCalculation(msg);   
-        packet[2] = checksum[0];
-        packet[3] = checksum[1];
+        // copying the main content into the buffer container to be sent
+        System.arraycopy(msg.getBytes(), 0, buf, 4, buf.length - 4);
         
-        // copy the message content into a new array byte
-        System.arraycopy(msg.getBytes(), 0, packet, 4, msg.getBytes().length);
+        // packet read to be sent
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
+        socket.send(packet);
         
+        // recieve the acknowledgment
+        packet = new DatagramPacket(buf, 3);
+        socket.receive(packet);
         
-        try{
-            
-            // send the packet
-            DatagramPacket UDPpacket = new DatagramPacket(packet, packet.length, address, 4445);
-            socket.send(UDPpacket);
-            
-            // recieve the acknowledgment
-            byte[] acknowledgement = new byte[3];
-            UDPpacket = new DatagramPacket(acknowledgement, acknowledgement.length);
-            socket.receive(UDPpacket);
-            
-            if(acknowledgement[0] == 1){
-                sendEcho(msg, sequenceNumber);
-            }
-            else{
-                System.out.println(("Line " + sequenceNumber) + " is sent successfully");
-            }
+        // if the acknowledgement is 1 means the error has occured so resend the message
+        if(buf[0] == 1){
+           sendPacket(msg, sequence);
         }
-        catch(IOException ex){
-            ex.printStackTrace();
-        }
+        
     }
  
     /**
-     * This method is to close the socket connection
+     * Description: to close the socket of the client side
      */
     public void close() {
         socket.close();
     }
     
     
-    
-    
     /**
-     * This method is to calculate the checksum of a specific line of the file
-     * @param message the line of file to check it's checksum
+     * Description: This method is used for finding the checksum of the line or message
+     * @param message the main message (line)
      * @return two bytes of checksum
      */
     public static byte[] checkSumCalculation(String message){
        byte[] bytes = new byte[2];
-       short first = (short) message.charAt(0);
+       short totalValue = (short) message.charAt(0);
        for(int x = 0; x < message.length(); x++){
-           first = (short) ((first + message.charAt(x)) % 16);
+           totalValue =  (short) ((totalValue + message.charAt(x)) % 16);
        }
-       bytes[0] = (byte)(first & 0xff);
-       bytes[1] = (byte)((first >> 8) & 0xff);
+       totalValue = (short) ~totalValue;
+       bytes[0] = (byte)(totalValue & 0xff);
+       bytes[1] = (byte)((totalValue >> 8) & 0xff);
        return bytes;
     }
     
-    
-    public static void main(String[] args) throws SocketException, UnknownHostException, Exception {
+    public static void main(String[] args) throws SocketException, UnknownHostException, IOException, Exception {
         
-        
-        Client client;     
-        ArrayList<String> lines;
         Scanner input = new Scanner(System.in);
         
+        // asking from the user the file name
+        System.out.print("Enter File Name: ");
+        String fileName = input.next();
         
-        ///----------> loop is because maybe the client wants to send several files
-        while(true){
-            
-            // This display message for the user
-            System.out.println("------------------------------");
-            System.out.println("1 > For Sending File");
-            System.out.println("2 > For Exit");
-            System.out.println("------------------------------");
-            System.out.print("Please Insert an Option >> ");
-            
-            
-            int option = input.nextInt();
-            
-            // entered options from the user
-            switch(option){
-                
-                /* user wants to send file to the server */
-                case 1:
-                    
-                    // Insert the file name without extension
-                    System.out.print("Insert Your File Name, Example (test1, test2): ");
-                    String fileName = input.next();
-                    
-                    // Initializing a new client object
-                    client = new Client();
-                    
-                    // converting file into array of lines
-                    lines = new FileScanner(fileName).getLines();    
-                    
-                    // the first request is the file name
-                    client.sendEcho(fileName, seqNum++);
-                    
-                    
-                    for(String line : lines){
-                        client.sendEcho(line, seqNum++);
-                    }
-                    
-                    // close the communication
-                    client.close();
-                    break;
-                  
-                // ----> the user wants to close the program
-                case 2:
-                    System.out.println("The problem is closed now");
-                    System.exit(0);
-                    
-                default:
-                    System.out.println("Sorry! You have to enter either 1 or 2");
-            }
-            
+        // initiating the client side connection
+        Client client = new Client();
+        
+        // array list of file's lines
+        ArrayList<String> lines = new FileScanner(fileName).getLines();
+        
+        
+        byte squence = 0;
+        
+        // the first packet is the file name
+        client.sendPacket("server1", squence++);
+        
+        // sending all the lines
+        for(String s : lines){
+            client.sendPacket(s, squence++);
         }
         
+        // sending the signal to the server for ending the connection
+        client.sendPacket("end", squence);
         
-       
+        // closing the client side socket
+        client.close();
     }
 }
