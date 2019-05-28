@@ -40,14 +40,15 @@ import java.util.Arrays;
      */
 public class Server extends Thread {
  
-    private DatagramSocket socket;
+    private final DatagramSocket socket;
     private boolean running;
-    private byte[] buf = new byte[256];
+    private final byte[] buf = new byte[256];
  
     public Server() throws SocketException {
         socket = new DatagramSocket(4445);
     }
  
+    @Override
     public void run() {
         running = true;
         ArrayList<ReceivedData> recLines = new ArrayList<>();
@@ -97,25 +98,18 @@ public class Server extends Thread {
             
             socket.close();
             
-            // printing out the received file 
-            PrintWriter output = new PrintWriter(new File(recLines.get(0).data + ".txt"));
-            for(int x = 1; x < recLines.size(); x++){
-                output.println(recLines.get(x).data);
+            try ( // printing out the received file
+                    PrintWriter output = new PrintWriter(new File(recLines.get(0).data + ".txt"))) {
+                for(int x = 1; x < recLines.size(); x++){
+                    output.println(recLines.get(x).data);
+                }
             }
-            output.close();
             
         }
         catch(IOException ex){
             ex.printStackTrace();;
         }
         
-    }
-    
-    
-    
-    public static void main(String[] args) throws SocketException {
-        Server server = new Server();
-        server.start();
     }
 }
 
